@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sip — Cocktail Recommender</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0e0c0a; color: #f0ebe3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+  .gate { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+  .gate-card { background: #1a1612; border: 0.5px solid #3a3028; border-radius: 16px; padding: 2.5rem 2rem; width: 100%; max-width: 340px; text-align: center; }
+  .gate-wordmark { font-size: 11px; letter-spacing: 0.18em; color: #6b5f52; text-transform: uppercase; margin-bottom: 1.5rem; }
+  .gate-title { font-size: 22px; font-weight: 500; color: #f0ebe3; margin-bottom: 0.5rem; }
+  .gate-sub { font-size: 14px; color: #6b5f52; margin-bottom: 2rem; }
+  .gate-input { width: 100%; background: #0e0c0a; border: 0.5px solid #3a3028; border-radius: 8px; color: #f0ebe3; font-size: 15px; padding: 12px 14px; outline: none; font-family: inherit; text-align: center; letter-spacing: 0.1em; margin-bottom: 12px; transition: border-color 0.2s; }
+  .gate-input:focus { border-color: #c4853a; }
+  .gate-input::placeholder { color: #3a3028; letter-spacing: 0; }
+  .gate-btn { width: 100%; background: #c4853a; border: none; border-radius: 8px; color: #0e0c0a; font-size: 15px; font-weight: 500; padding: 12px; cursor: pointer; font-family: inherit; transition: background 0.2s; }
+  .gate-btn:hover { background: #d4954a; }
+  .gate-error { font-size: 13px; color: #c47060; margin-top: 10px; display: none; }
+  .app { max-width: 480px; margin: 0 auto; padding: 2rem 1.25rem 6rem; display: none; }
+  .wordmark { font-size: 11px; letter-spacing: 0.18em; color: #6b5f52; text-transform: uppercase; margin-bottom: 2rem; }
+  .step { margin-bottom: 2.5rem; opacity: 0.3; transition: opacity 0.3s; }
+  .step.active { opacity: 1; }
+  .step-label { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #8a7060; margin-bottom: 0.5rem; }
+  .step-title { font-size: 20px; font-weight: 500; color: #f0ebe3; margin-bottom: 1.1rem; line-height: 1.3; }
+  .divider { height: 0.5px; background: #1e1a16; margin: 0.5rem 0 2.5rem; }
+  input[type="text"] { width: 100%; background: #1a1612; border: 0.5px solid #3a3028; border-radius: 8px; color: #f0ebe3; font-size: 15px; padding: 11px 14px; outline: none; font-family: inherit; transition: border-color 0.2s; }
+  input[type="text"]::placeholder { color: #4a3f35; }
+  input[type="text"]:focus { border-color: #c4853a; }
+  .ghost-btn { margin-top: 10px; background: transparent; border: 0.5px solid #3a3028; border-radius: 8px; color: #8a7060; font-size: 13px; padding: 8px 14px; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; transition: border-color 0.2s, color 0.2s; }
+  .ghost-btn:hover { border-color: #c4853a; color: #c4853a; }
+  .ghost-btn:disabled { opacity: 0.4; pointer-events: none; }
+  .sentiment-box { margin-top: 1rem; background: #1a1612; border: 0.5px solid #3a3028; border-radius: 8px; padding: 12px 14px; display: none; }
+  .sentiment-box.visible { display: block; }
+  .sentiment-lbl { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #c4853a; margin-bottom: 5px; }
+  .sentiment-txt { font-size: 13px; color: #b8a898; line-height: 1.6; }
+  .upload-zone { border: 0.5px dashed #3a3028; border-radius: 12px; padding: 1.75rem 1rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; background: #120f0c; position: relative; overflow: hidden; }
+  .upload-zone:hover { border-color: #c4853a; background: #1a1410; }
+  .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon { font-size: 28px; color: #4a3f35; margin-bottom: 8px; }
+  .upload-text { font-size: 14px; color: #6b5f52; }
+  .upload-sub { font-size: 12px; color: #4a3f35; margin-top: 3px; }
+  .upload-zone.has-photo { border-color: #c4853a; border-style: solid; }
+  .upload-zone.has-photo .upload-text { color: #d4a070; }
+  .scan-status { margin-top: 1rem; display: none; }
+  .scan-status.visible { display: block; }
+  .scan-loading { background: #1a1612; border: 0.5px solid #3a3028; border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #8a7060; display: flex; align-items: center; gap: 10px; }
+  .cocktail-list { background: #1a1612; border: 0.5px solid #2a4a2a; border-radius: 8px; padding: 12px 14px; display: none; }
+  .cocktail-list-lbl { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #4a7a4a; margin-bottom: 8px; }
+  .cocktail-item { font-size: 13px; padding: 5px 0; border-bottom: 0.5px solid #2a2218; line-height: 1.4; }
+  .cocktail-item:last-child { border-bottom: none; }
+  .cocktail-name { color: #f0ebe3; font-weight: 500; }
+  .cocktail-desc { color: #6b5f52; font-size: 12px; margin-top: 2px; }
+  .error-box { background: #1a1212; border: 0.5px solid #4a2020; border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #c47060; display: none; }
+  .sub-label { font-size: 12px; color: #4a3f35; margin-bottom: 8px; }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill { background: #1a1612; border: 0.5px solid #3a3028; border-radius: 20px; color: #8a7060; font-size: 13px; padding: 6px 14px; cursor: pointer; transition: all 0.15s; user-select: none; font-family: inherit; }
+  .pill:hover { border-color: #c4853a; color: #c4853a; }
+  .pill.selected { background: #2a1e10; border-color: #c4853a; color: #e8a060; }
+  .reco-card { background: #1a1612; border: 0.5px solid #3a3028; border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: 10px; }
+  .reco-rank { font-size: 11px; color: #c4853a; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 3px; }
+  .reco-name { font-size: 17px; font-weight: 500; color: #f0ebe3; margin-bottom: 5px; }
+  .reco-reason { font-size: 13px; color: #8a7060; line-height: 1.6; margin-bottom: 8px; }
+  .reco-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .tag { background: #2a1e10; border: 0.5px solid #4a3020; border-radius: 20px; font-size: 11px; color: #c4853a; padding: 2px 9px; }
+  .placeholder-reco { border: 0.5px dashed #2a2218; border-radius: 12px; padding: 1.75rem; text-align: center; color: #3a3028; font-size: 13px; }
+  .cta-area { position: fixed; bottom: 0; left: 0; right: 0; padding: 1rem 1.25rem 1.5rem; background: linear-gradient(transparent, #0e0c0a 35%); pointer-events: none; }
+  .cta-inner { max-width: 480px; margin: 0 auto; pointer-events: all; }
+  .cta-btn { width: 100%; background: #c4853a; border: none; border-radius: 10px; color: #0e0c0a; font-size: 15px; font-weight: 500; padding: 14px; cursor: pointer; font-family: inherit; opacity: 0.3; pointer-events: none; transition: opacity 0.2s; }
+  .cta-btn.ready { opacity: 1; pointer-events: all; }
+  .cta-btn.ready:hover { background: #d4954a; }
+  .cta-btn:disabled { opacity: 0.5; pointer-events: none; }
+  .spin { width: 14px; height: 14px; border: 1.5px solid #3a3028; border-top-color: #c4853a; border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <p class="gate-wordmark">Sip</p>
+    <p class="gate-title">What's the word?</p>
+    <p class="gate-sub">Enter the password to continue</p>
+    <input class="gate-input" type="password" id="gate-input" placeholder="Password" autocomplete="off" />
+    <button class="gate-btn" id="gate-btn">Enter</button>
+    <p class="gate-error" id="gate-error">Wrong password. Try again.</p>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <p class="wordmark">Sip</p>
+  <div class="step active" id="step1">
+    <p class="step-label">Step 1</p>
+    <p class="step-title">Where are you drinking tonight?</p>
+    <input type="text" id="restaurant-input" placeholder="e.g. Atlas Bar, Singapore" />
+    <button class="ghost-btn" id="search-btn">&#x2315; See what people are saying</button>
+    <div class="sentiment-box" id="sentiment-box">
+      <p class="sentiment-lbl">Vibe from reviews</p>
+      <p class="sentiment-txt" id="sentiment-txt"></p>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="step" id="step2">
+    <p class="step-label">Step 2</p>
+    <p class="step-title">What are you working with?</p>
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" accept="image/*" capture="environment" id="menu-upload" />
+      <div class="upload-icon" id="upload-icon">📷</div>
+      <p class="upload-text" id="upload-text">Photograph the cocktail menu</p>
+      <p class="upload-sub" id="upload-sub">Tap to take a photo or upload one</p>
+    </div>
+    <div class="scan-status" id="scan-status">
+      <div class="scan-loading" id="scan-loading"><div class="spin"></div>&nbsp;Reading your menu…</div>
+      <div class="cocktail-list" id="cocktail-list"></div>
+      <div class="error-box" id="scan-error"></div>
+    </div>
+    <div style="margin-top:1.5rem;">
+      <p class="sub-label">Your taste</p>
+      <div class="pill-row" style="margin-bottom:1.25rem;">
+        <button class="pill" data-type="taste" data-val="Sweet">Sweet</button>
+        <button class="pill" data-type="taste" data-val="Sour">Sour</button>
+        <button class="pill" data-type="taste" data-val="Strong">Strong</button>
+        <button class="pill" data-type="taste" data-val="Fruity">Fruity</button>
+        <button class="pill" data-type="taste" data-val="Bitter">Bitter</button>
+        <button class="pill" data-type="taste" data-val="Light &amp; low">Light &amp; low</button>
+      </div>
+      <p class="sub-label">Tonight's vibe</p>
+      <div class="pill-row">
+        <button class="pill" data-type="vibe" data-val="Date night">Date night</button>
+        <button class="pill" data-type="vibe" data-val="Catching up">Catching up</button>
+        <button class="pill" data-type="vibe" data-val="Office drinks">Office drinks</button>
+        <button class="pill" data-type="vibe" data-val="Lively">Lively</button>
+        <button class="pill" data-type="vibe" data-val="Chill">Chill</button>
+      </div>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="step" id="step3">
+    <p class="step-label">Step 3</p>
+    <p class="step-title">Your picks</p>
+    <div class="placeholder-reco" id="placeholder-reco">Complete steps 1 and 2, then tap below.</div>
+    <div id="reco-area" style="display:none;"></div>
+  </div>
+</div>
+
+<div class="cta-area" id="cta-area" style="display:none;">
+  <div class="cta-inner">
+    <button class="cta-btn" id="cta-btn">Get my recommendations</button>
+  </div>
+</div>
+
+<script>
+const API_KEY = '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';
+const PASSWORD = 'cartoon';
+
+const state = { restaurant: '', sentiment: '', hasPhoto: false, imageBase64: '', imageType: 'image/jpeg', cocktails: [], tastes: [], vibes: [] };
+const $ = id => document.getElementById(id);
+
+function hdrs() {
+  return { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' };
+}
+
+$('gate-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkPassword(); });
+$('gate-btn').addEventListener('click', checkPassword);
+
+function checkPassword() {
+  if ($('gate-input').value.trim().toLowerCase() === PASSWORD.toLowerCase()) {
+    $('gate').style.display = 'none';
+    $('app').style.display = 'block';
+    $('cta-area').style.display = 'block';
+  } else {
+    $('gate-error').style.display = 'block';
+    $('gate-input').value = '';
+    $('gate-input').focus();
+  }
+}
+
+function updateUI() {
+  const hasRestaurant = state.restaurant.trim().length > 2;
+  const hasPhoto = state.hasPhoto && state.cocktails.length > 0;
+  const hasPrefs = state.tastes.length > 0 || state.vibes.length > 0;
+  $('step1').className = 'step active';
+  $('step2').className = hasRestaurant ? 'step active' : 'step';
+  $('step3').className = (hasPhoto && hasPrefs) ? 'step active' : 'step';
+  $('cta-btn').className = (hasRestaurant && hasPhoto && hasPrefs) ? 'cta-btn ready' : 'cta-btn';
+}
+
+$('restaurant-input').addEventListener('input', e => { state.restaurant = e.target.value; updateUI(); });
+
+$('search-btn').addEventListener('click', async () => {
+  if (state.restaurant.trim().length < 2) return;
+  const btn = $('search-btn');
+  btn.disabled = true; btn.textContent = 'Searching…';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', headers: hdrs(),
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 500,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: `Search for reviews of "${state.restaurant}". Summarise in 2-3 sentences: the vibe, which cocktails people love, what crowd goes there. Prose only.` }]
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.content.filter(b => b.type === 'text').map(b => b.text).join(' ').trim();
+    state.sentiment = text;
+    $('sentiment-txt').textContent = text || 'No reviews found.';
+  } catch(e) { $('sentiment-txt').textContent = 'Error: ' + e.message; }
+  $('sentiment-box').classList.add('visible');
+  btn.disabled = false; btn.textContent = '⌕ See what people are saying';
+});
+
+$('menu-upload').addEventListener('change', async e => {
+  const file = e.target.files[0]; if (!file) return;
+  $('upload-zone').classList.add('has-photo');
+  $('upload-icon').textContent = '⏳'; $('upload-text').textContent = 'Reading menu…'; $('upload-sub').textContent = '';
+  $('scan-status').classList.add('visible'); $('scan-loading').style.display = 'flex';
+  $('cocktail-list').style.display = 'none'; $('scan-error').style.display = 'none';
+  try {
+    const base64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror = rej; r.readAsDataURL(file); });
+    state.imageBase64 = base64; state.imageType = file.type || 'image/jpeg';
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', headers: hdrs(),
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000,
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: state.imageType, data: base64 } },
+          { type: 'text', text: 'Extract all cocktails from this menu. Return ONLY a JSON array: [{"name":"...","desc":"..."}]. No preamble, no markdown.' }
+        ]}]
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const raw = data.content.find(b => b.type === 'text')?.text || '[]';
+    state.cocktails = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    state.hasPhoto = true;
+    $('scan-loading').style.display = 'none'; $('cocktail-list').style.display = 'block';
+    $('cocktail-list').innerHTML = `<p class="cocktail-list-lbl">✓ ${state.cocktails.length} cocktails found</p>${state.cocktails.map(c => `<div class="cocktail-item"><div class="cocktail-name">${c.name}</div>${c.desc ? `<div class="cocktail-desc">${c.desc}</div>` : ''}</div>`).join('')}`;
+    $('upload-icon').textContent = '✓'; $('upload-text').textContent = 'Menu scanned';
+    $('upload-sub').textContent = `${state.cocktails.length} cocktails detected · tap to rescan`;
+  } catch(err) {
+    $('scan-loading').style.display = 'none'; $('scan-error').style.display = 'block';
+    $('scan-error').textContent = 'Could not read menu: ' + err.message;
+    $('upload-icon').textContent = '📷'; $('upload-text').textContent = 'Photograph the cocktail menu';
+    $('upload-sub').textContent = 'Tap to try again'; state.hasPhoto = false;
+  }
+  updateUI();
+});
+
+document.querySelectorAll('.pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    pill.classList.toggle('selected');
+    const arr = pill.dataset.type === 'taste' ? state.tastes : state.vibes;
+    const idx = arr.indexOf(pill.dataset.val);
+    if (idx > -1) arr.splice(idx, 1); else arr.push(pill.dataset.val);
+    updateUI();
+  });
+});
+
+$('cta-btn').addEventListener('click', async () => {
+  if (!$('cta-btn').classList.contains('ready')) return;
+  $('cta-btn').disabled = true; $('cta-btn').textContent = 'Finding your picks…';
+  $('placeholder-reco').style.display = 'none'; $('reco-area').style.display = 'block';
+  $('reco-area').innerHTML = '<div style="display:flex;align-items:center;gap:10px;color:#6b5f52;font-size:13px;padding:1rem 0"><div class="spin"></div>&nbsp;Asking Claude…</div>';
+  $('step3').className = 'step active';
+  $('step3').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  try {
+    const prompt = `You are a cocktail sommelier at ${state.restaurant}.\n\nWhat people say: ${state.sentiment || 'No info.'}\n\nMenu:\n${state.cocktails.map(c => `- ${c.name}${c.desc ? ': '+c.desc : ''}`).join('\n')}\n\nTaste: ${state.tastes.join(', ')||'none'}\nVibe: ${state.vibes.join(', ')||'none'}\n\nTop 3 picks. ONLY JSON, no markdown:\n[{"rank":1,"name":"exact menu name","reason":"1-2 sentences","tags":["tag1","tag2"]}]`;
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', headers: hdrs(),
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const raw = data.content.find(b => b.type === 'text')?.text || '[]';
+    const picks = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    $('reco-area').innerHTML = picks.map(p => `<div class="reco-card"><p class="reco-rank">Pick #${p.rank}</p><p class="reco-name">${p.name}</p><p class="reco-reason">${p.reason}</p><div class="reco-tags">${(p.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div></div>`).join('');
+  } catch(err) {
+    $('reco-area').innerHTML = `<div class="error-box" style="display:block;">Error: ${err.message}</div>`;
+  }
+  $('cta-btn').disabled = false; $('cta-btn').textContent = 'Get my recommendations';
+});
+</script>
+</body>
+</html>
